@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chatroom</title>
+<title>Glow Chat</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💬</text></svg>">
 <style>
   :root {
@@ -40,30 +40,12 @@
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
   }
-  button, input, select { font: inherit; color: inherit; }
+  button, input, select, textarea { font: inherit; color: inherit; }
   button { cursor: pointer; }
   :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   [hidden] { display: none !important; }
 
-  /* ---------- Setup screen ---------- */
-  #setup {
-    min-height: 100%;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-  }
-  .setup-card {
-    width: 100%;
-    max-width: 420px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 28px;
-    padding: 32px 28px;
-    box-shadow: var(--shadow);
-  }
-  .setup-card h1 { margin: 0 0 6px; font-size: 1.7em; letter-spacing: -.02em; }
-  .setup-card p { margin: 0 0 24px; color: var(--muted); line-height: 1.5; }
-  .field-label { display: block; font-weight: 700; font-size: .9em; margin-bottom: 8px; }
+  /* ---------- Shared bits ---------- */
   .text-input {
     width: 100%;
     padding: 13px 16px;
@@ -73,203 +55,145 @@
     transition: border-color .15s;
   }
   .text-input:focus { border-color: var(--accent); outline: none; }
-  .hint { min-height: 1.4em; margin: 8px 2px 18px; font-size: .85em; color: var(--muted); }
+  .field-label { display: block; font-weight: 700; font-size: .9em; margin-bottom: 8px; }
+  .hint { min-height: 1.4em; margin: 8px 2px 14px; font-size: .85em; color: var(--muted); }
   .hint.error { color: #e0405a; }
-  .avatar-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
-  .avatar-opt {
-    width: 44px; height: 44px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    background: var(--surface-2);
-    font-size: 22px;
-    display: grid; place-items: center;
-    padding: 0;
-    transition: transform .12s, border-color .12s;
-  }
-  .avatar-opt:hover { transform: scale(1.08); }
-  .avatar-opt[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+  .hint.ok { color: #1f9d6a; }
   .btn-primary {
-    width: 100%;
-    padding: 14px;
-    border: 0;
-    border-radius: 14px;
-    background: var(--accent);
-    color: var(--accent-ink);
-    font-weight: 800;
+    width: 100%; padding: 14px; border: 0; border-radius: 14px;
+    background: var(--accent); color: var(--accent-ink); font-weight: 800;
     transition: filter .15s, transform .1s;
   }
   .btn-primary:hover { filter: brightness(1.08); }
   .btn-primary:active { transform: scale(.98); }
+  .btn-primary:disabled { opacity: .55; cursor: default; }
+  .btn-ghost { padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); font-weight: 700; }
+  .btn-ghost:hover { background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); }
+  .btn-danger { color: #e0405a; }
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: 14px;
+    border: 1px solid var(--border); background: var(--surface-2);
+    display: grid; place-items: center; font-size: 19px; padding: 0; flex: none;
+    transition: background .15s;
+  }
+  .icon-btn:hover { background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #2bbf7e; display: inline-block; flex: none; }
+  .dot.connecting { background: #e6a817; }
+  .dot.offline { background: #e0405a; }
+  .avatar-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+  .avatar-opt {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 2px solid var(--border); background: var(--surface-2);
+    font-size: 22px; display: grid; place-items: center; padding: 0;
+    transition: transform .12s, border-color .12s;
+  }
+  .avatar-opt:hover { transform: scale(1.08); }
+  .avatar-opt[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+
+  /* ---------- Setup ---------- */
+  #setup { min-height: 100%; display: grid; place-items: center; padding: 24px; }
+  .setup-card {
+    width: 100%; max-width: 420px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 28px; padding: 32px 28px; box-shadow: var(--shadow);
+  }
+  .setup-card h1 { margin: 0 0 6px; font-size: 1.7em; letter-spacing: -.02em; }
+  .setup-card p { margin: 0 0 24px; color: var(--muted); line-height: 1.5; }
   .setup-foot { margin-top: 16px; text-align: center; font-size: .82em; color: var(--muted); }
 
   /* ---------- App shell ---------- */
   #app { height: 100%; display: flex; justify-content: center; padding: 16px; }
-  .chat {
-    width: 100%;
-    max-width: 780px;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 26px;
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    position: relative;
+  .shell {
+    width: 100%; max-width: 1040px; height: 100%;
+    display: grid; grid-template-columns: 330px 1fr;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 26px; box-shadow: var(--shadow);
+    overflow: hidden; position: relative;
   }
-  header.top {
-    display: flex; align-items: center; gap: 12px;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-  }
-  .room-icon {
-    width: 42px; height: 42px; border-radius: 14px;
-    background: var(--accent); color: var(--accent-ink);
-    display: grid; place-items: center; font-size: 20px;
-  }
-  .room-meta { flex: 1; min-width: 0; }
-  .room-meta strong { display: block; font-size: 1.05em; }
-  .room-meta span { font-size: .82em; color: var(--muted); display: flex; align-items: center; gap: 6px; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; background: #2bbf7e; display: inline-block; }
-  .icon-btn {
-    width: 42px; height: 42px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-    display: grid; place-items: center;
-    font-size: 19px; padding: 0;
-    transition: background .15s;
-  }
-  .icon-btn:hover { background: color-mix(in srgb, var(--accent) 14%, var(--surface-2)); }
 
-  #messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px 18px;
-    display: flex; flex-direction: column; gap: 4px;
-    background: var(--bg);
-    scroll-behavior: smooth;
+  /* sidebar */
+  .sidebar { display: flex; flex-direction: column; border-right: 1px solid var(--border); background: var(--surface); min-height: 0; }
+  .side-top { display: flex; align-items: center; gap: 10px; padding: 14px; border-bottom: 1px solid var(--border); }
+  .me-av { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border); display: grid; place-items: center; font-size: 22px; flex: none; }
+  .me-meta { flex: 1; min-width: 0; }
+  .me-meta strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .conn { font-size: .78em; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+  .side-scroll { flex: 1; overflow-y: auto; padding: 8px; }
+  .sec { font-size: .8em; font-weight: 700; color: var(--muted); margin: 12px 8px 6px; }
+  .f-item {
+    width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px;
+    border: 0; background: transparent; border-radius: 14px; text-align: left;
   }
-  .empty {
-    margin: auto;
-    text-align: center;
-    color: var(--muted);
-    max-width: 260px;
-    line-height: 1.5;
-  }
+  .f-item:hover { background: var(--surface-2); }
+  .f-item.active { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+  .f-av { width: 46px; height: 46px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border); display: grid; place-items: center; font-size: 23px; flex: none; }
+  .f-body { flex: 1; min-width: 0; }
+  .f-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .f-prev { font-size: .85em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .f-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: .72em; color: var(--muted); flex: none; }
+  .badge { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; font-size: 12px; }
+  .req { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 14px; margin-bottom: 6px; background: var(--surface-2); }
+  .req .f-av { width: 40px; height: 40px; font-size: 20px; }
+  .req-actions { display: flex; gap: 6px; flex: none; }
+  .btn-sm { padding: 7px 12px; border-radius: 10px; border: 0; font-weight: 800; font-size: .85em; }
+  .btn-sm.accept { background: var(--accent); color: var(--accent-ink); }
+  .btn-sm.decline { background: var(--surface); border: 1px solid var(--border); }
+  .side-empty { text-align: center; color: var(--muted); padding: 40px 20px; line-height: 1.5; }
+  .side-empty .big { font-size: 42px; display: block; margin-bottom: 8px; }
+  .side-empty .btn-primary { margin-top: 16px; width: auto; padding: 11px 20px; }
+
+  /* chat pane */
+  .chat-pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--bg); }
+  .no-chat { margin: auto; text-align: center; color: var(--muted); max-width: 280px; line-height: 1.5; padding: 20px; }
+  .no-chat .big { font-size: 56px; display: block; margin-bottom: 10px; }
+  .chat-view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  header.top { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  #backBtn { display: none; }
+  .top .f-av { width: 42px; height: 42px; font-size: 21px; }
+  .room-meta { flex: 1; min-width: 0; }
+  .room-meta strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .room-meta span { font-size: .8em; color: var(--muted); }
+
+  #messages { flex: 1; overflow-y: auto; padding: 20px 18px; display: flex; flex-direction: column; gap: 4px; scroll-behavior: smooth; }
+  .empty { margin: auto; text-align: center; color: var(--muted); max-width: 260px; line-height: 1.5; }
   .empty .big { font-size: 42px; display: block; margin-bottom: 8px; }
-  .sys {
-    align-self: center;
-    font-size: .8em;
-    color: var(--muted);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    padding: 4px 12px;
-    border-radius: 999px;
-    margin: 8px 0;
-  }
+  .sys { align-self: center; font-size: .8em; color: var(--muted); background: var(--surface); border: 1px solid var(--border); padding: 4px 12px; border-radius: 999px; margin: 8px 0; }
   .row { display: flex; gap: 8px; align-items: flex-end; max-width: 86%; }
   .row.me { align-self: flex-end; flex-direction: row-reverse; }
   .row.gap-top { margin-top: 10px; }
-  .av {
-    width: 32px; height: 32px; border-radius: 50%;
-    background: var(--surface); border: 1px solid var(--border);
-    display: grid; place-items: center; font-size: 17px; flex: none;
-  }
+  .av { width: 32px; height: 32px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: grid; place-items: center; font-size: 17px; flex: none; }
   .av.ghost { visibility: hidden; }
   .bubble-wrap { min-width: 0; display: flex; flex-direction: column; }
   .row.me .bubble-wrap { align-items: flex-end; }
-  .who { font-size: .76em; font-weight: 700; color: var(--muted); margin: 0 6px 3px; }
-  .bubble {
-    padding: 9px 14px;
-    border-radius: var(--radius);
-    background: var(--bubble-other);
-    border: 1px solid var(--border);
-    line-height: 1.45;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-  }
+  .bubble { padding: 9px 14px; border-radius: var(--radius); background: var(--bubble-other); border: 1px solid var(--border); line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; }
   .row:not(.me) .bubble { border-bottom-left-radius: 6px; }
-  .row.me .bubble {
-    background: var(--accent);
-    color: var(--accent-ink);
-    border-color: transparent;
-    border-bottom-right-radius: 6px;
-  }
+  .row.me .bubble { background: var(--accent); color: var(--accent-ink); border-color: transparent; border-bottom-right-radius: 6px; }
   .bubble.emoji-only { background: transparent; border-color: transparent; font-size: 2.4em; line-height: 1.1; padding: 2px 4px; }
-  .time { font-size: .7em; color: var(--muted); margin: 3px 6px 0; }
-  body.hide-time .time { display: none; }
+  .time { font-size: .7em; color: var(--muted); margin: 3px 6px 0; display: flex; gap: 6px; align-items: center; }
+  body.hide-time .time .t { display: none; }
+  .retry { border: 0; background: transparent; color: #e0405a; font-weight: 800; font-size: 1em; padding: 0; text-decoration: underline; }
 
-  /* composer */
-  form.composer {
-    display: flex; align-items: flex-end; gap: 10px;
-    padding: 12px 14px;
-    border-top: 1px solid var(--border);
-    background: var(--surface);
-    position: relative;
-  }
-  #msgInput {
-    flex: 1;
-    resize: none;
-    max-height: 120px;
-    padding: 12px 16px;
-    border-radius: 16px;
-    border: 2px solid var(--border);
-    background: var(--surface-2);
-    line-height: 1.4;
-  }
+  form.composer { display: flex; align-items: flex-end; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--border); background: var(--surface); position: relative; }
+  #msgInput { flex: 1; resize: none; max-height: 120px; padding: 12px 16px; border-radius: 16px; border: 2px solid var(--border); background: var(--surface-2); line-height: 1.4; }
   #msgInput:focus { border-color: var(--accent); outline: none; }
-  .send-btn {
-    width: 46px; height: 46px; border-radius: 16px; border: 0;
-    background: var(--accent); color: var(--accent-ink);
-    display: grid; place-items: center; font-size: 19px; padding: 0;
-    transition: filter .15s, transform .1s;
-  }
+  .send-btn { width: 46px; height: 46px; border-radius: 16px; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 19px; padding: 0; transition: filter .15s, transform .1s; }
   .send-btn:hover { filter: brightness(1.1); }
   .send-btn:active { transform: scale(.94); }
   .send-btn:disabled { opacity: .45; cursor: default; }
   .composer .icon-btn { width: 46px; height: 46px; border-radius: 16px; }
 
-  /* emoji picker */
-  #picker {
-    position: absolute;
-    left: 14px; bottom: 74px;
-    width: min(340px, calc(100% - 28px));
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    box-shadow: var(--shadow);
-    padding: 10px;
-    z-index: 5;
-    animation: pop .16s ease-out;
-  }
+  #picker { position: absolute; left: 14px; bottom: 74px; width: min(340px, calc(100% - 28px)); background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow); padding: 10px; z-index: 5; animation: pop .16s ease-out; }
   @keyframes pop { from { opacity: 0; transform: translateY(8px) scale(.97); } to { opacity: 1; transform: none; } }
   .tabs { display: flex; gap: 4px; margin-bottom: 8px; }
-  .tab {
-    flex: 1; padding: 6px 0; border-radius: 10px; border: 0;
-    background: transparent; font-size: 18px;
-  }
+  .tab { flex: 1; padding: 6px 0; border-radius: 10px; border: 0; background: transparent; font-size: 18px; }
   .tab[aria-selected="true"] { background: color-mix(in srgb, var(--accent) 18%, var(--surface)); }
   .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; max-height: 190px; overflow-y: auto; }
-  .grid button {
-    border: 0; background: transparent; border-radius: 10px;
-    font-size: 22px; padding: 6px 0;
-  }
+  .grid button { border: 0; background: transparent; border-radius: 10px; font-size: 22px; padding: 6px 0; }
   .grid button:hover { background: var(--surface-2); }
 
-  /* settings drawer */
+  /* overlays */
   #scrim { position: absolute; inset: 0; background: rgba(10, 8, 25, .4); z-index: 9; animation: fade .2s; }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-  #settings {
-    position: absolute; top: 0; right: 0; bottom: 0;
-    width: min(360px, 100%);
-    background: var(--surface);
-    border-left: 1px solid var(--border);
-    z-index: 10;
-    display: flex; flex-direction: column;
-    transform: translateX(100%);
-    transition: transform .25s ease;
-  }
+  #settings { position: absolute; top: 0; right: 0; bottom: 0; width: min(380px, 100%); background: var(--surface); border-left: 1px solid var(--border); z-index: 10; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .25s ease; }
   #settings.open { transform: none; }
   .set-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--border); }
   .set-head h2 { margin: 0; font-size: 1.1em; }
@@ -286,15 +210,26 @@
   .toggle input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .15s; }
   .toggle input:checked { background: var(--accent); }
   .toggle input:checked::after { transform: translateX(18px); }
-  .btn-row { display: flex; flex-direction: column; gap: 10px; }
-  .btn-ghost { padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); font-weight: 700; }
-  .btn-ghost:hover { background: color-mix(in srgb, var(--accent) 12%, var(--surface-2)); }
-  .btn-danger { color: #e0405a; }
-  .note { font-size: .8em; color: var(--muted); line-height: 1.5; }
+  .btn-col { display: flex; flex-direction: column; gap: 10px; }
+  .note { font-size: .8em; color: var(--muted); line-height: 1.5; margin: 0; }
 
-  @media (max-width: 560px) {
+  .modal { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(430px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 22px; z-index: 11; box-shadow: var(--shadow); animation: pop .18s ease-out; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .modal-head h2 { margin: 0; font-size: 1.2em; }
+  .code-box { display: flex; align-items: center; justify-content: center; background: var(--surface-2); border: 2px dashed var(--border); border-radius: 14px; padding: 12px 14px; font-weight: 800; letter-spacing: .1em; font-size: 1.25em; user-select: all; }
+  .inline-btns { display: flex; gap: 8px; margin: 10px 0 22px; }
+  .inline-btns .btn-ghost { flex: 1; padding: 10px; font-size: .9em; }
+  .sep { height: 1px; background: var(--border); margin: 4px 0 20px; }
+
+  #toast { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--surface); padding: 10px 18px; border-radius: 999px; font-size: .9em; font-weight: 700; z-index: 30; max-width: calc(100% - 32px); text-align: center; animation: pop .18s ease-out; box-shadow: var(--shadow); }
+
+  @media (max-width: 720px) {
     #app { padding: 0; }
-    .chat { border-radius: 0; border: 0; }
+    .shell { grid-template-columns: 1fr; border-radius: 0; border: 0; }
+    .chat-pane { display: none; }
+    .shell.show-chat .chat-pane { display: flex; }
+    .shell.show-chat .sidebar { display: none; }
+    #backBtn { display: grid; }
     .row { max-width: 94%; }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -322,32 +257,82 @@
   </form>
 </main>
 
-<!-- ================= CHAT ================= -->
+<!-- ================= APP ================= -->
 <div id="app" hidden>
-  <section class="chat" aria-label="Chat">
-    <header class="top">
-      <div class="room-icon" aria-hidden="true">💬</div>
-      <div class="room-meta">
-        <strong>General</strong>
-        <span><i class="dot"></i><span id="onlineText">1 online</span></span>
+  <div class="shell" id="shell">
+
+    <!-- Friends sidebar -->
+    <aside class="sidebar" aria-label="Friends">
+      <div class="side-top">
+        <div class="me-av" id="meAv" aria-hidden="true"></div>
+        <div class="me-meta">
+          <strong id="meName"></strong>
+          <span class="conn"><i class="dot connecting" id="connDot"></i><span id="connText">Connecting…</span></span>
+        </div>
+        <button class="icon-btn" id="openAdd" aria-label="Add a friend" title="Add a friend">➕</button>
+        <button class="icon-btn" id="openSettings" aria-label="Open settings" title="Settings">⚙️</button>
       </div>
-      <button class="icon-btn" id="openSettings" aria-label="Open settings" title="Settings">⚙️</button>
-    </header>
+      <div class="side-scroll" id="friendList"></div>
+    </aside>
 
-    <div id="messages" role="log" aria-live="polite"></div>
-
-    <form class="composer" id="composer">
-      <button type="button" class="icon-btn" id="emojiBtn" aria-label="Add emoji" aria-expanded="false" title="Emoji">😊</button>
-      <textarea id="msgInput" rows="1" placeholder="Write a message" aria-label="Message"></textarea>
-      <button class="send-btn" id="sendBtn" type="submit" aria-label="Send message" disabled>➤</button>
-
-      <div id="picker" hidden>
-        <div class="tabs" role="tablist" id="pickerTabs"></div>
-        <div class="grid" id="pickerGrid"></div>
+    <!-- Chat pane -->
+    <section class="chat-pane" aria-label="Conversation">
+      <div class="no-chat" id="noChat">
+        <span class="big">💬</span>
+        Pick a friend from the list to start chatting, or add a new friend with their code.
       </div>
-    </form>
+
+      <div class="chat-view" id="chatView" hidden>
+        <header class="top">
+          <button class="icon-btn" id="backBtn" aria-label="Back to friends">←</button>
+          <div class="f-av" id="chatAv" aria-hidden="true"></div>
+          <div class="room-meta">
+            <strong id="chatName"></strong>
+            <span id="chatSub"></span>
+          </div>
+          <button class="icon-btn" id="removeFriend" aria-label="Remove friend" title="Remove friend">🗑️</button>
+        </header>
+
+        <div id="messages" role="log" aria-live="polite"></div>
+
+        <form class="composer" id="composer">
+          <button type="button" class="icon-btn" id="emojiBtn" aria-label="Add emoji" aria-expanded="false" title="Emoji">😊</button>
+          <textarea id="msgInput" rows="1" maxlength="800" placeholder="Write a message" aria-label="Message"></textarea>
+          <button class="send-btn" id="sendBtn" type="submit" aria-label="Send message" disabled>➤</button>
+          <div id="picker" hidden>
+            <div class="tabs" role="tablist" id="pickerTabs"></div>
+            <div class="grid" id="pickerGrid"></div>
+          </div>
+        </form>
+      </div>
+    </section>
 
     <div id="scrim" hidden></div>
+
+    <!-- Add friend modal -->
+    <div class="modal" id="addModal" role="dialog" aria-modal="true" aria-labelledby="addTitle" hidden>
+      <div class="modal-head">
+        <h2 id="addTitle">Add a friend</h2>
+        <button class="icon-btn" id="closeAdd" aria-label="Close">✕</button>
+      </div>
+
+      <span class="field-label">Your friend code</span>
+      <div class="code-box" id="myCode"></div>
+      <div class="inline-btns">
+        <button type="button" class="btn-ghost" id="copyCode">Copy code</button>
+        <button type="button" class="btn-ghost" id="copyLink">Copy invite link</button>
+      </div>
+      <div class="sep"></div>
+
+      <form id="addForm" autocomplete="off">
+        <label class="field-label" for="friendCode">Add a friend with their code</label>
+        <input class="text-input" id="friendCode" placeholder="XXXXX-XXXXX" maxlength="120" spellcheck="false">
+        <div class="hint" id="addHint">Ask your friend for their code or invite link.</div>
+        <button class="btn-primary" id="addSubmit" type="submit">Send friend request</button>
+      </form>
+    </div>
+
+    <!-- Settings drawer -->
     <aside id="settings" aria-label="Settings" aria-hidden="true">
       <div class="set-head">
         <h2>Settings</h2>
@@ -388,34 +373,55 @@
           <h3>Chat</h3>
           <label class="toggle"><span>Press Enter to send</span><input type="checkbox" id="optEnter"></label>
           <label class="toggle"><span>Show message times</span><input type="checkbox" id="optTime"></label>
+          <label class="toggle"><span>Sound for new messages</span><input type="checkbox" id="optSound"></label>
         </div>
 
-        <div class="set-group btn-row">
-          <button type="button" class="btn-ghost" id="clearChat">Clear chat on this device</button>
-          <button type="button" class="btn-ghost btn-danger" id="signOut">Sign out</button>
+        <div class="set-group">
+          <h3>Chat server</h3>
+          <input class="text-input" id="setServer" spellcheck="false" aria-label="Chat server address">
+          <div class="hint" id="serverHint">Real-time messages go through this ntfy server. Friends must use the same one.</div>
+          <div class="btn-col">
+            <button type="button" class="btn-ghost" id="saveServer">Save and reconnect</button>
+            <button type="button" class="btn-ghost" id="resetServer">Use default (ntfy.sh)</button>
+          </div>
         </div>
 
-        <p class="note">This is a front-end demo. Messages are saved in this browser and shared between tabs of the same browser. To chat between different devices, connect a backend such as Firebase or a WebSocket server.</p>
+        <div class="set-group btn-col">
+          <button type="button" class="btn-ghost" id="clearChats">Delete all conversations</button>
+          <button type="button" class="btn-ghost btn-danger" id="signOut">Sign out and delete my data</button>
+        </div>
+
+        <p class="note">Messages travel through a public relay and are not end-to-end encrypted, so keep this for casual chat. Anyone who knows your friend code could read messages sent to you in the last 12 hours, so only share it with people you trust.</p>
       </div>
     </aside>
-  </section>
+
+    <div id="toast" role="status" hidden></div>
+  </div>
 </div>
 
 <script>
 (() => {
   'use strict';
 
-  /* ---------- Safe storage ---------- */
+  /* ================= Helpers ================= */
+  const $ = (id) => document.getElementById(id);
+  const h = (tag, cls, txt) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  };
   const store = {
-    get(key, fallback) {
-      try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); }
-      catch { return fallback; }
-    },
+    get(key, fallback) { try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
     set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} },
     remove(key) { try { localStorage.removeItem(key); } catch {} }
   };
+  const splitEmoji = (s) => (typeof Intl !== 'undefined' && Intl.Segmenter)
+    ? Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s), x => x.segment)
+    : Array.from(s);
 
-  const K = { user: 'chat.user', settings: 'chat.settings', msgs: 'chat.messages' };
+  const K = { user: 'glow.user', settings: 'glow.settings', friends: 'glow.friends', convos: 'glow.convos', since: 'glow.since' };
+  const DEFAULT_SERVER = 'https://ntfy.sh';
   const AVATARS = ['😀','😎','🤖','🦊','🐱','🐼','🦄','🐙','🌵','🍕','🚀','👾'];
   const ACCENTS = { violet: '#6c5ce7', ocean: '#0984e3', rose: '#e84393', forest: '#00a37a', amber: '#e17c05' };
   const EMOJI = {
@@ -425,33 +431,50 @@
     '🐶': '🐶🐱🐭🐹🐰🦊🐻🐼🐨🐯🦁🐮🐷🐸🐵🐔🐧🐦🦄🐝🦋🐢🐙🐬🍎🍌🍉🍓🍕🍔🍟🌮🍩🍪🍫☕🍿🍦'
   };
 
-  const $ = (id) => document.getElementById(id);
-  const splitEmoji = (s) => (typeof Intl !== 'undefined' && Intl.Segmenter)
-    ? Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(s), x => x.segment)
-    : Array.from(s);
+  /* Friend codes: 10 chars, no look-alike letters (I, L, O, 0, 1) */
+  const ALPHA = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  const CODE_RE = /^[ABCDEFGHJKMNPQRSTUVWXYZ2-9]{10}$/;
+  const newCode = () => {
+    const a = new Uint8Array(10);
+    crypto.getRandomValues(a);
+    return Array.from(a, x => ALPHA[x % ALPHA.length]).join('');
+  };
+  const fmtCode = (c) => c.slice(0, 5) + '-' + c.slice(5);
+  const parseCode = (s) => {
+    s = String(s || '').trim();
+    const m = s.match(/add=([^&#\s]+)/i);
+    if (m) s = m[1];
+    return s.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  };
+  const topicFor = (id) => 'glowchat1-' + id.toLowerCase();
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
-  /* ---------- State ---------- */
+  /* ================= State ================= */
   let user = store.get(K.user, null);
   const settings = Object.assign(
-    { theme: 'auto', accent: 'violet', size: '16', enterToSend: true, showTime: true },
+    { theme: 'auto', accent: 'violet', size: '16', enterToSend: true, showTime: true, sound: true, server: DEFAULT_SERVER },
     store.get(K.settings, {})
   );
-  let messages = store.get(K.msgs, []);
-  const tabId = Math.random().toString(36).slice(2);
-  const peers = new Map();
-  let channel = null;
-  try { channel = new BroadcastChannel('chat-room-general'); } catch {}
+  let friends = store.get(K.friends, {});
+  let convos = store.get(K.convos, {});
+  let since = store.get(K.since, 'all');
+  let activeId = null;
+  let pendingInvite = null;
 
-  /* ---------- Validation ---------- */
-  function validName(name) {
-    const n = name.trim().replace(/\s+/g, ' ');
-    if (n.length < 2) return { ok: false, msg: 'Username must have at least 2 characters.' };
-    if (n.length > 20) return { ok: false, msg: 'Username can have up to 20 characters.' };
-    if (!/^[\p{L}\p{N} _-]+$/u.test(n)) return { ok: false, msg: 'Use only letters, numbers, spaces, _ and -.' };
-    return { ok: true, name: n };
-  }
+  try {
+    const p = new URLSearchParams(location.search).get('add');
+    if (p) { pendingInvite = p; history.replaceState(null, '', location.pathname); }
+  } catch {}
 
-  /* ---------- Appearance ---------- */
+  const saveSettings = () => { store.set(K.settings, settings); applyAppearance(); };
+  const saveFriends = () => store.set(K.friends, friends);
+  const saveConvos = () => {
+    Object.keys(convos).forEach(k => { if (convos[k].length > 300) convos[k] = convos[k].slice(-300); });
+    store.set(K.convos, convos);
+  };
+  const serverBase = () => String(settings.server || DEFAULT_SERVER).replace(/\/+$/, '');
+
+  /* ================= Appearance ================= */
   const mq = window.matchMedia('(prefers-color-scheme: dark)');
   function applyAppearance() {
     const dark = settings.theme === 'dark' || (settings.theme === 'auto' && mq.matches);
@@ -461,16 +484,55 @@
     document.body.classList.toggle('hide-time', !settings.showTime);
   }
   mq.addEventListener?.('change', applyAppearance);
-  const saveSettings = () => { store.set(K.settings, settings); applyAppearance(); };
 
-  /* ---------- Avatar pickers ---------- */
+  /* ================= Toast + sound ================= */
+  let toastT;
+  function toast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.hidden = false;
+    clearTimeout(toastT);
+    toastT = setTimeout(() => { t.hidden = true; }, 3200);
+  }
+  let actx = null;
+  ['click', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, () => {
+    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} }
+  }, { passive: true }));
+  function ping() {
+    if (!settings.sound || !actx) return;
+    try {
+      const o = actx.createOscillator(), g = actx.createGain();
+      o.type = 'sine'; o.frequency.value = 880;
+      g.gain.setValueAtTime(.0001, actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.12, actx.currentTime + .02);
+      g.gain.exponentialRampToValueAtTime(.0001, actx.currentTime + .25);
+      o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime + .26);
+    } catch {}
+  }
+
+  /* ================= Validation ================= */
+  function validName(name) {
+    const n = name.trim().replace(/\s+/g, ' ');
+    if (n.length < 2) return { ok: false, msg: 'Username must have at least 2 characters.' };
+    if (n.length > 20) return { ok: false, msg: 'Username can have up to 20 characters.' };
+    if (!/^[\p{L}\p{N} _-]+$/u.test(n)) return { ok: false, msg: 'Use only letters, numbers, spaces, _ and -.' };
+    return { ok: true, name: n };
+  }
+  function cleanProfile(f) {
+    if (!f || typeof f.id !== 'string' || !CODE_RE.test(f.id) || (user && f.id === user.id)) return null;
+    let name = typeof f.name === 'string' ? f.name.replace(/\s+/g, ' ').trim().slice(0, 20) : '';
+    if (!name) name = 'Guest';
+    const emoji = AVATARS.includes(f.emoji) ? f.emoji : '🙂';
+    return { id: f.id, name, emoji };
+  }
+
+  /* ================= Avatar row ================= */
   function buildAvatarRow(container, selected, onPick) {
     container.innerHTML = '';
     AVATARS.forEach(a => {
-      const b = document.createElement('button');
+      const b = h('button', 'avatar-opt', a);
       b.type = 'button';
-      b.className = 'avatar-opt';
-      b.textContent = a;
       b.setAttribute('aria-label', 'Avatar ' + a);
       b.setAttribute('aria-pressed', String(a === selected));
       b.addEventListener('click', () => {
@@ -482,7 +544,7 @@
     });
   }
 
-  /* ---------- Setup screen ---------- */
+  /* ================= Setup screen ================= */
   let draftAvatar = AVATARS[Math.floor(Math.random() * AVATARS.length)];
   function showSetup() {
     $('app').hidden = true;
@@ -496,91 +558,367 @@
     const res = validName($('username').value);
     const hint = $('nameHint');
     if (!res.ok) { hint.textContent = res.msg; hint.classList.add('error'); return; }
-    hint.classList.remove('error');
-    user = { id: 'g-' + Math.random().toString(36).slice(2, 8), name: res.name, emoji: draftAvatar };
+    user = { id: newCode(), name: res.name, emoji: draftAvatar };
     store.set(K.user, user);
-    showChat();
+    showApp();
   });
   $('username').addEventListener('input', () => {
     $('nameHint').classList.remove('error');
     $('nameHint').textContent = '2–20 characters. Letters, numbers, spaces, _ and - are fine.';
   });
 
-  /* ---------- Rendering messages ---------- */
+  /* ================= Time formatting ================= */
+  const pad = (n) => String(n).padStart(2, '0');
+  const hm = (t) => { const d = new Date(t); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+  const sameDay = (a, b) => new Date(a).toDateString() === new Date(b).toDateString();
+  function listTime(t) {
+    if (sameDay(t, Date.now())) return hm(t);
+    return new Date(t).toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+  function dayLabel(t) {
+    const now = Date.now();
+    if (sameDay(t, now)) return 'Today';
+    if (sameDay(t, now - 86400000)) return 'Yesterday';
+    return new Date(t).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  function ago(t) {
+    const s = Math.floor((Date.now() - t) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.floor(s / 60) + ' min ago';
+    if (sameDay(t, Date.now())) return 'today at ' + hm(t);
+    return dayLabel(t) + ' at ' + hm(t);
+  }
+
+  /* ================= Sidebar ================= */
+  const convoOf = (id) => convos[id] || (convos[id] = []);
+  const lastMsg = (id) => { const c = convos[id]; return c && c.length ? c[c.length - 1] : null; };
+  const lastTs = (f) => { const m = lastMsg(f.id); return m ? m.ts : (f.at || 0); };
+
+  function totalUnread() { return Object.values(friends).reduce((n, f) => n + (f.unread || 0), 0); }
+  function updateTitle() { const n = totalUnread(); document.title = (n ? '(' + n + ') ' : '') + 'Glow Chat'; }
+
+  function renderMe() { $('meAv').textContent = user.emoji; $('meName').textContent = user.name; }
+
+  function renderSidebar() {
+    const box = $('friendList');
+    box.innerHTML = '';
+    const all = Object.values(friends);
+    const incoming = all.filter(f => f.status === 'incoming');
+    const sent = all.filter(f => f.status === 'sent');
+    const fr = all.filter(f => f.status === 'friend').sort((a, b) => lastTs(b) - lastTs(a));
+
+    if (!all.length) {
+      const e = h('div', 'side-empty');
+      e.append(h('span', 'big', '🫶'));
+      e.append(document.createTextNode('No friends yet. Share your code or add a friend to start chatting.'));
+      e.append(document.createElement('br'));
+      const b = h('button', 'btn-primary', 'Add a friend');
+      b.type = 'button';
+      b.addEventListener('click', () => openAdd());
+      e.append(b);
+      box.append(e);
+      updateTitle();
+      return;
+    }
+
+    if (incoming.length) {
+      box.append(h('div', 'sec', 'Friend requests'));
+      incoming.forEach(f => {
+        const r = h('div', 'req');
+        r.append(h('div', 'f-av', f.emoji));
+        const body = h('div', 'f-body');
+        body.append(h('div', 'f-name', f.name), h('div', 'f-prev', 'wants to be friends'));
+        const act = h('div', 'req-actions');
+        const ok = h('button', 'btn-sm accept', 'Accept'); ok.type = 'button';
+        const no = h('button', 'btn-sm decline', 'Decline'); no.type = 'button';
+        ok.addEventListener('click', () => acceptRequest(f.id));
+        no.addEventListener('click', () => declineRequest(f.id));
+        act.append(ok, no);
+        r.append(body, act);
+        box.append(r);
+      });
+    }
+
+    if (fr.length) {
+      box.append(h('div', 'sec', 'Friends'));
+      fr.forEach(f => {
+        const b = h('button', 'f-item' + (f.id === activeId ? ' active' : ''));
+        b.type = 'button';
+        b.append(h('div', 'f-av', f.emoji));
+        const body = h('div', 'f-body');
+        const m = lastMsg(f.id);
+        body.append(h('div', 'f-name', f.name), h('div', 'f-prev', m ? (m.me ? 'You: ' : '') + m.text : 'Say hello 👋'));
+        const meta = h('div', 'f-meta');
+        if (m) meta.append(h('span', null, listTime(m.ts)));
+        if (f.unread) meta.append(h('span', 'badge', f.unread > 99 ? '99+' : String(f.unread)));
+        b.append(body, meta);
+        b.addEventListener('click', () => openChat(f.id));
+        box.append(b);
+      });
+    }
+
+    if (sent.length) {
+      box.append(h('div', 'sec', 'Waiting for a reply'));
+      sent.forEach(f => {
+        const r = h('div', 'req');
+        r.append(h('div', 'f-av', f.emoji));
+        const body = h('div', 'f-body');
+        body.append(h('div', 'f-name', f.name), h('div', 'f-prev', 'Request sent'));
+        const act = h('div', 'req-actions');
+        const c = h('button', 'btn-sm decline', 'Cancel'); c.type = 'button';
+        c.addEventListener('click', () => { delete friends[f.id]; saveFriends(); renderSidebar(); });
+        act.append(c);
+        r.append(body, act);
+        box.append(r);
+      });
+    }
+    updateTitle();
+  }
+
+  /* ================= Chat view ================= */
   const list = $('messages');
-  const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const isEmojiOnly = (text) => {
     const t = text.trim();
     if (!t || !/^[\p{Extended_Pictographic}\u200d\ufe0f\s]+$/u.test(t)) return false;
     return splitEmoji(t.replace(/\s/g, '')).length <= 3;
   };
 
-  function render() {
+  function openChat(id) {
+    const f = friends[id];
+    if (!f || f.status !== 'friend') return;
+    activeId = id;
+    f.unread = 0;
+    saveFriends();
+    $('shell').classList.add('show-chat');
+    $('noChat').hidden = true;
+    $('chatView').hidden = false;
+    closePicker();
+    renderSidebar();
+    renderChat(true);
+    if (!matchMedia('(max-width: 720px)').matches) $('msgInput').focus();
+  }
+  function closeChat() {
+    activeId = null;
+    $('shell').classList.remove('show-chat');
+    $('noChat').hidden = false;
+    $('chatView').hidden = true;
+    renderSidebar();
+  }
+  $('backBtn').addEventListener('click', closeChat);
+
+  function renderChat(force) {
+    const f = friends[activeId];
+    if (!f) return;
+    $('chatAv').textContent = f.emoji;
+    $('chatName').textContent = f.name;
+    $('chatSub').textContent = f.lastSeen ? 'Last active ' + ago(f.lastSeen) : 'Friend';
+
+    const near = list.scrollHeight - list.scrollTop - list.clientHeight < 140;
     list.innerHTML = '';
-    if (!messages.length) {
-      const e = document.createElement('div');
-      e.className = 'empty';
-      e.innerHTML = '<span class="big">👋</span>No messages yet. Say hello to start the conversation.';
-      list.appendChild(e);
+    const msgs = convoOf(activeId);
+    if (!msgs.length) {
+      const e = h('div', 'empty');
+      e.append(h('span', 'big', '👋'));
+      e.append(document.createTextNode('No messages yet. Say hello to ' + f.name + '!'));
+      list.append(e);
       return;
     }
     let prev = null;
-    messages.forEach(m => {
-      if (m.type === 'sys') {
-        const s = document.createElement('div');
-        s.className = 'sys';
-        s.textContent = m.text;
-        list.appendChild(s);
-        prev = null;
-        return;
+    msgs.forEach(m => {
+      if (!prev || !sameDay(prev.ts, m.ts)) { list.append(h('div', 'sys', dayLabel(m.ts))); prev = null; }
+      const same = prev && prev.me === m.me && (m.ts - prev.ts) < 120000;
+      const row = h('div', 'row' + (m.me ? ' me' : '') + (same ? '' : ' gap-top'));
+      row.append(h('div', 'av' + (same ? ' ghost' : ''), m.me ? user.emoji : f.emoji));
+      const wrap = h('div', 'bubble-wrap');
+      wrap.append(h('div', 'bubble' + (isEmojiOnly(m.text) ? ' emoji-only' : ''), m.text));
+      const tm = h('div', 'time');
+      tm.append(h('span', 't', hm(m.ts)));
+      if (m.me) {
+        if (m.st === 'failed') {
+          const r = h('button', 'retry', 'Not sent. Tap to retry'); r.type = 'button';
+          r.addEventListener('click', () => retrySend(m.id));
+          tm.append(r);
+        } else {
+          tm.append(h('span', null, m.st === 'sending' ? '…' : '✓'));
+        }
       }
-      const mine = m.uid === user.id;
-      const sameAsPrev = prev && prev.uid === m.uid && (m.t - prev.t) < 120000;
-
-      const row = document.createElement('div');
-      row.className = 'row' + (mine ? ' me' : '') + (sameAsPrev ? '' : ' gap-top');
-
-      const av = document.createElement('div');
-      av.className = 'av' + (sameAsPrev ? ' ghost' : '');
-      av.textContent = m.emoji || '🙂';
-
-      const wrap = document.createElement('div');
-      wrap.className = 'bubble-wrap';
-
-      if (!mine && !sameAsPrev) {
-        const who = document.createElement('div');
-        who.className = 'who';
-        who.textContent = m.name;
-        wrap.appendChild(who);
-      }
-      const b = document.createElement('div');
-      b.className = 'bubble' + (isEmojiOnly(m.text) ? ' emoji-only' : '');
-      b.textContent = m.text;
-      wrap.appendChild(b);
-
-      const tm = document.createElement('div');
-      tm.className = 'time';
-      tm.textContent = fmtTime(m.t);
-      wrap.appendChild(tm);
-
-      row.append(av, wrap);
-      list.appendChild(row);
+      wrap.append(tm);
+      row.append(wrap);
+      list.append(row);
       prev = m;
     });
-    list.scrollTop = list.scrollHeight;
+    if (force || near) list.scrollTop = list.scrollHeight;
   }
 
-  function persist() { store.set(K.msgs, messages.slice(-300)); }
-
-  function addMessage(m, broadcast) {
-    messages.push(m);
-    if (messages.length > 300) messages = messages.slice(-300);
-    persist();
-    render();
-    if (broadcast && channel) channel.postMessage({ kind: 'msg', msg: m });
+  /* ================= Networking ================= */
+  async function publish(toId, body) {
+    const payload = Object.assign({ v: 1, from: { id: user.id, name: user.name, emoji: user.emoji } }, body);
+    try {
+      const r = await fetch(serverBase() + '/' + topicFor(toId), { method: 'POST', body: JSON.stringify(payload) });
+      return r.ok;
+    } catch { return false; }
   }
 
-  /* ---------- Composer ---------- */
+  let es = null, retry = 0, retryT = null, connState = 'connecting';
+  function setConn(s) {
+    connState = s;
+    $('connDot').className = 'dot' + (s === 'online' ? '' : ' ' + s);
+    $('connText').textContent = s === 'online' ? 'Connected' : s === 'connecting' ? 'Connecting…' : 'Offline, retrying…';
+  }
+  function connect() {
+    clearTimeout(retryT);
+    if (es) { es.close(); es = null; }
+    if (!user) return;
+    setConn('connecting');
+    const url = serverBase() + '/' + topicFor(user.id) + '/sse?since=' + encodeURIComponent(since);
+    try { es = new EventSource(url); } catch { setConn('offline'); scheduleRetry(); return; }
+    es.onopen = () => { retry = 0; setConn('online'); };
+    es.onmessage = (e) => handleEvent(e.data);
+    es.onerror = () => { if (es) { es.close(); es = null; } setConn('offline'); scheduleRetry(); };
+  }
+  function scheduleRetry() {
+    retry = Math.min(retry + 1, 5);
+    retryT = setTimeout(connect, Math.min(1000 * 2 ** retry, 20000));
+  }
+  window.addEventListener('online', () => { if (user && !es) connect(); });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden || !user) return;
+    if (!es) connect();
+    const f = friends[activeId];
+    if (f && f.unread) { f.unread = 0; saveFriends(); renderSidebar(); }
+  });
+
+  const seen = new Set();
+  function handleEvent(raw) {
+    let o;
+    try { o = JSON.parse(raw); } catch { return; }
+    if (!o || o.event !== 'message') return;
+    if (typeof o.time === 'number' && (typeof since !== 'number' || o.time > since)) { since = o.time; store.set(K.since, since); }
+    if (o.id) { if (seen.has(o.id)) return; seen.add(o.id); if (seen.size > 2000) seen.clear(); }
+    let d;
+    try { d = JSON.parse(o.message); } catch { return; }
+    if (!d || d.v !== 1 || typeof d.t !== 'string') return;
+    const p = cleanProfile(d.from);
+    if (!p) return;
+    const f = friends[p.id];
+    let wasRemoved = false;
+
+    switch (d.t) {
+      case 'req':
+        if (f && f.status === 'friend') {
+          Object.assign(f, { name: p.name, emoji: p.emoji });
+          publish(p.id, { t: 'acc' });
+        } else if (f && f.status === 'sent') {
+          Object.assign(f, p, { status: 'friend', lastSeen: Date.now() });
+          publish(p.id, { t: 'acc' });
+          toast(p.name + ' is now your friend');
+        } else {
+          const isNew = !f;
+          friends[p.id] = Object.assign(f || { unread: 0 }, p, { status: 'incoming', at: Date.now() });
+          if (isNew) { toast(p.name + ' sent you a friend request'); ping(); }
+        }
+        break;
+      case 'acc':
+        if (f && f.status === 'sent') {
+          Object.assign(f, p, { status: 'friend', lastSeen: Date.now() });
+          toast(p.name + ' accepted your request');
+          ping();
+        } else if (f && f.status === 'friend') {
+          Object.assign(f, { name: p.name, emoji: p.emoji });
+        }
+        break;
+      case 'msg': {
+        if (!f || f.status !== 'friend') return;
+        if (typeof d.text !== 'string' || typeof d.id !== 'string' || d.id.length > 40) return;
+        const text = d.text.trim().slice(0, 800);
+        if (!text) return;
+        const c = convoOf(p.id);
+        if (c.some(m => m.id === d.id)) return;
+        const now = Date.now();
+        const ts = (typeof d.ts === 'number' && d.ts > 0 && d.ts <= now + 60000) ? d.ts : now;
+        c.push({ id: d.id, me: false, text, ts });
+        c.sort((a, b) => a.ts - b.ts);
+        Object.assign(f, { name: p.name, emoji: p.emoji, lastSeen: now });
+        if (activeId === p.id && !document.hidden) f.unread = 0;
+        else { f.unread = (f.unread || 0) + 1; ping(); }
+        break;
+      }
+      case 'prof':
+        if (f) Object.assign(f, { name: p.name, emoji: p.emoji });
+        break;
+      case 'rem':
+        if (f && f.status === 'friend') {
+          delete friends[p.id]; delete convos[p.id]; wasRemoved = true;
+          toast(f.name + ' removed you from their friends');
+          if (activeId === p.id) closeChat();
+        }
+        break;
+      default: return;
+    }
+    saveFriends(); saveConvos();
+    renderSidebar();
+    if (activeId && !wasRemoved) renderChat(false);
+  }
+
+  /* ================= Friend actions ================= */
+  async function sendRequest(raw) {
+    const code = parseCode(raw);
+    if (!CODE_RE.test(code)) return { ok: false, msg: 'That code does not look right. Codes have 10 letters and numbers.' };
+    if (code === user.id) return { ok: false, msg: 'That is your own code. Share it with a friend instead.' };
+    const ex = friends[code];
+    if (ex && ex.status === 'friend') return { ok: false, msg: ex.name + ' is already your friend.' };
+    if (ex && ex.status === 'incoming') { acceptRequest(code); return { ok: true, msg: 'Friend added.' }; }
+    const ok = await publish(code, { t: 'req' });
+    if (!ok) return { ok: false, msg: 'Could not reach the chat server. Check your connection and try again.' };
+    friends[code] = Object.assign(ex || {}, {
+      id: code, name: (ex && ex.name) || 'Friend ' + code.slice(0, 4), emoji: (ex && ex.emoji) || '🙂',
+      status: 'sent', unread: 0, at: Date.now()
+    });
+    saveFriends(); renderSidebar();
+    return { ok: true, msg: 'Request sent. You will be connected once they accept.' };
+  }
+  function acceptRequest(id) {
+    const f = friends[id];
+    if (!f) return;
+    f.status = 'friend'; f.lastSeen = Date.now();
+    saveFriends(); renderSidebar();
+    publish(id, { t: 'acc' });
+    toast('You and ' + f.name + ' are now friends');
+  }
+  function declineRequest(id) { delete friends[id]; saveFriends(); renderSidebar(); }
+  $('removeFriend').addEventListener('click', () => {
+    const f = friends[activeId];
+    if (!f) return;
+    if (!confirm('Remove ' + f.name + ' and delete this conversation?')) return;
+    const id = activeId;
+    publish(id, { t: 'rem' });
+    delete friends[id]; delete convos[id];
+    saveFriends(); saveConvos();
+    closeChat();
+  });
+  let profT;
+  function broadcastProfile() {
+    clearTimeout(profT);
+    profT = setTimeout(() => {
+      Object.values(friends).filter(f => f.status === 'friend').forEach(f => publish(f.id, { t: 'prof' }));
+    }, 1200);
+  }
+
+  /* ================= Sending messages ================= */
+  async function deliver(m, toId) {
+    m.st = 'sending';
+    saveConvos();
+    const ok = await publish(toId, { t: 'msg', id: m.id, text: m.text, ts: m.ts });
+    m.st = ok ? 'sent' : 'failed';
+    saveConvos();
+    if (activeId === toId) renderChat(false);
+    renderSidebar();
+  }
+  function retrySend(msgId) {
+    const m = convoOf(activeId).find(x => x.id === msgId);
+    if (m) { deliver(m, activeId); renderChat(false); }
+  }
+
   const input = $('msgInput');
   const sendBtn = $('sendBtn');
   function autosize() {
@@ -598,28 +936,30 @@
   $('composer').addEventListener('submit', (e) => {
     e.preventDefault();
     const text = input.value.trim();
-    if (!text) return;
-    addMessage({ id: Date.now() + '-' + tabId, uid: user.id, name: user.name, emoji: user.emoji, text: text.slice(0, 1000), t: Date.now() }, true);
+    if (!text || !activeId) return;
+    const m = { id: uid(), me: true, text: text.slice(0, 800), ts: Date.now(), st: 'sending' };
+    convoOf(activeId).push(m);
     input.value = '';
     autosize();
     closePicker();
+    renderChat(true);
+    renderSidebar();
+    deliver(m, activeId);
     input.focus();
   });
 
-  /* ---------- Emoji picker ---------- */
+  /* ================= Emoji picker ================= */
   const picker = $('picker');
   function buildPicker() {
     const tabs = $('pickerTabs');
     tabs.innerHTML = '';
     Object.keys(EMOJI).forEach((k, i) => {
-      const t = document.createElement('button');
+      const t = h('button', 'tab', k);
       t.type = 'button';
-      t.className = 'tab';
-      t.textContent = k;
       t.setAttribute('role', 'tab');
       t.setAttribute('aria-selected', String(i === 0));
       t.addEventListener('click', () => selectTab(k));
-      tabs.appendChild(t);
+      tabs.append(t);
     });
     selectTab(Object.keys(EMOJI)[0]);
   }
@@ -628,12 +968,11 @@
     const grid = $('pickerGrid');
     grid.innerHTML = '';
     splitEmoji(EMOJI[key]).forEach(em => {
-      const b = document.createElement('button');
+      const b = h('button', null, em);
       b.type = 'button';
-      b.textContent = em;
       b.setAttribute('aria-label', 'Insert ' + em);
       b.addEventListener('click', () => insertEmoji(em));
-      grid.appendChild(b);
+      grid.append(b);
     });
   }
   function insertEmoji(em) {
@@ -653,11 +992,49 @@
   document.addEventListener('click', (e) => {
     if (!picker.hidden && !picker.contains(e.target) && !$('emojiBtn').contains(e.target)) closePicker();
   });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { closePicker(); closeSettings(); }
+
+  /* ================= Add-friend modal ================= */
+  function inviteLink() { return location.href.split('#')[0].split('?')[0] + '?add=' + fmtCode(user.id); }
+  function copyText(text, btn, label) {
+    const done = () => { const old = label; btn.textContent = 'Copied ✓'; setTimeout(() => btn.textContent = old, 1600); };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done));
+    } else fallbackCopy(text, done);
+  }
+  function fallbackCopy(text, done) {
+    const t = document.createElement('textarea');
+    t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.append(t); t.select();
+    try { document.execCommand('copy'); done(); } catch {}
+    t.remove();
+  }
+  function openAdd(prefill) {
+    $('myCode').textContent = fmtCode(user.id);
+    $('friendCode').value = prefill ? fmtCode(parseCode(prefill)) : '';
+    const hint = $('addHint');
+    hint.className = 'hint';
+    hint.textContent = prefill ? 'Check the code, then send the request.' : 'Ask your friend for their code or invite link.';
+    $('scrim').hidden = false;
+    $('addModal').hidden = false;
+    $('friendCode').focus();
+  }
+  function closeAdd() { $('addModal').hidden = true; if ($('settings').getAttribute('aria-hidden') === 'true') $('scrim').hidden = true; }
+  $('openAdd').addEventListener('click', () => openAdd());
+  $('closeAdd').addEventListener('click', closeAdd);
+  $('copyCode').addEventListener('click', (e) => copyText(fmtCode(user.id), e.currentTarget, 'Copy code'));
+  $('copyLink').addEventListener('click', (e) => copyText(inviteLink(), e.currentTarget, 'Copy invite link'));
+  $('addForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $('addSubmit'), hint = $('addHint');
+    btn.disabled = true; btn.textContent = 'Sending…';
+    const res = await sendRequest($('friendCode').value);
+    btn.disabled = false; btn.textContent = 'Send friend request';
+    hint.textContent = res.msg;
+    hint.className = 'hint ' + (res.ok ? 'ok' : 'error');
+    if (res.ok) { $('friendCode').value = ''; }
   });
 
-  /* ---------- Settings drawer ---------- */
+  /* ================= Settings ================= */
   function openSettings() {
     syncSettingsUI();
     $('scrim').hidden = false;
@@ -666,13 +1043,16 @@
     $('setName').focus();
   }
   function closeSettings() {
-    $('scrim').hidden = true;
     $('settings').classList.remove('open');
     $('settings').setAttribute('aria-hidden', 'true');
+    if ($('addModal').hidden) $('scrim').hidden = true;
   }
   $('openSettings').addEventListener('click', openSettings);
   $('closeSettings').addEventListener('click', closeSettings);
-  $('scrim').addEventListener('click', closeSettings);
+  $('scrim').addEventListener('click', () => { closeSettings(); closeAdd(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closePicker(); closeSettings(); closeAdd(); }
+  });
 
   function setSeg(id, value) {
     $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(value))));
@@ -680,115 +1060,99 @@
   function syncSettingsUI() {
     $('setName').value = user.name;
     $('setNameHint').textContent = '';
-    $('setNameHint').classList.remove('error');
+    $('setNameHint').className = 'hint';
     buildAvatarRow($('setAvatarRow'), user.emoji, a => {
-      user.emoji = a; store.set(K.user, user); broadcastHello();
+      user.emoji = a; store.set(K.user, user); renderMe(); broadcastProfile();
+      if (activeId) renderChat(false);
     });
     setSeg('themeSeg', settings.theme);
     setSeg('sizeSeg', settings.size);
     $('optEnter').checked = settings.enterToSend;
     $('optTime').checked = settings.showTime;
+    $('optSound').checked = settings.sound;
+    $('setServer').value = settings.server;
+    $('serverHint').className = 'hint';
+    $('serverHint').textContent = 'Real-time messages go through this ntfy server. Friends must use the same one.';
     $('swatches').querySelectorAll('.swatch').forEach(s => s.setAttribute('aria-pressed', String(s.dataset.k === settings.accent)));
   }
-  // swatches
   Object.entries(ACCENTS).forEach(([k, hex]) => {
-    const b = document.createElement('button');
+    const b = h('button', 'swatch');
     b.type = 'button';
-    b.className = 'swatch';
     b.dataset.k = k;
     b.style.background = hex;
     b.setAttribute('aria-label', k + ' accent');
     b.addEventListener('click', () => { settings.accent = k; saveSettings(); syncSettingsUI(); });
-    $('swatches').appendChild(b);
+    $('swatches').append(b);
   });
-  $('themeSeg').addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
-    settings.theme = b.dataset.v; saveSettings(); syncSettingsUI();
-  });
-  $('sizeSeg').addEventListener('click', (e) => {
-    const b = e.target.closest('button'); if (!b) return;
-    settings.size = b.dataset.v; saveSettings(); syncSettingsUI();
-  });
+  $('themeSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; settings.theme = b.dataset.v; saveSettings(); syncSettingsUI(); });
+  $('sizeSeg').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; settings.size = b.dataset.v; saveSettings(); syncSettingsUI(); });
   $('optEnter').addEventListener('change', (e) => { settings.enterToSend = e.target.checked; saveSettings(); });
   $('optTime').addEventListener('change', (e) => { settings.showTime = e.target.checked; saveSettings(); });
+  $('optSound').addEventListener('change', (e) => { settings.sound = e.target.checked; saveSettings(); if (e.target.checked) ping(); });
 
   $('setName').addEventListener('change', () => {
     const res = validName($('setName').value);
     const hint = $('setNameHint');
-    if (!res.ok) { hint.textContent = res.msg; hint.classList.add('error'); return; }
-    hint.classList.remove('error');
-    hint.textContent = 'Saved.';
+    if (!res.ok) { hint.textContent = res.msg; hint.className = 'hint error'; return; }
+    hint.textContent = 'Saved.'; hint.className = 'hint ok';
     user.name = res.name;
     $('setName').value = res.name;
     store.set(K.user, user);
-    broadcastHello();
+    renderMe();
+    broadcastProfile();
   });
-  $('clearChat').addEventListener('click', () => {
-    if (!confirm('Clear all messages saved in this browser?')) return;
-    messages = [];
-    persist();
-    render();
-    if (channel) channel.postMessage({ kind: 'clear' });
+
+  $('saveServer').addEventListener('click', () => {
+    const hint = $('serverHint');
+    let v = $('setServer').value.trim();
+    try {
+      const u = new URL(v);
+      if (!/^https?:$/.test(u.protocol)) throw new Error();
+      v = u.origin + u.pathname.replace(/\/+$/, '');
+    } catch { hint.textContent = 'Enter a full address such as https://ntfy.sh'; hint.className = 'hint error'; return; }
+    settings.server = v;
+    since = 'all'; store.set(K.since, since);
+    saveSettings();
+    connect();
+    hint.textContent = 'Saved. Reconnecting…'; hint.className = 'hint ok';
+  });
+  $('resetServer').addEventListener('click', () => {
+    $('setServer').value = DEFAULT_SERVER;
+    $('saveServer').click();
+  });
+  $('clearChats').addEventListener('click', () => {
+    if (!confirm('Delete all conversations on this device? Your friends list stays.')) return;
+    convos = {};
+    saveConvos();
+    renderSidebar();
+    if (activeId) renderChat(true);
     closeSettings();
   });
   $('signOut').addEventListener('click', () => {
-    if (channel) channel.postMessage({ kind: 'bye', id: tabId });
-    store.remove(K.user);
-    user = null;
+    if (!confirm('Sign out and delete your guest profile, friends and messages from this browser? You will get a new friend code next time.')) return;
+    if (es) { es.close(); es = null; }
+    clearTimeout(retryT);
+    [K.user, K.friends, K.convos, K.since].forEach(store.remove);
+    user = null; friends = {}; convos = {}; since = 'all'; activeId = null;
     closeSettings();
+    closeChat();
     showSetup();
   });
 
-  /* ---------- Presence + cross-tab sync ---------- */
-  function updateOnline() {
-    const now = Date.now();
-    for (const [id, p] of peers) if (now - p.seen > 10000) peers.delete(id);
-    const count = peers.size + 1;
-    $('onlineText').textContent = count + (count === 1 ? ' person online' : ' people online');
-  }
-  function broadcastHello() {
-    if (channel && user) channel.postMessage({ kind: 'hello', id: tabId, name: user.name });
-  }
-  if (channel) {
-    channel.onmessage = (ev) => {
-      const d = ev.data || {};
-      if (!user) return;
-      if (d.kind === 'msg' && d.msg && !messages.some(m => m.id === d.msg.id)) {
-        messages.push(d.msg);
-        render();
-      } else if (d.kind === 'clear') {
-        messages = []; render();
-      } else if (d.kind === 'hello') {
-        const isNew = !peers.has(d.id);
-        peers.set(d.id, { name: d.name, seen: Date.now() });
-        if (isNew) broadcastHello();
-        updateOnline();
-      } else if (d.kind === 'bye') {
-        peers.delete(d.id); updateOnline();
-      }
-    };
-    setInterval(() => { if (user) { broadcastHello(); updateOnline(); } }, 4000);
-    window.addEventListener('beforeunload', () => channel.postMessage({ kind: 'bye', id: tabId }));
-  }
-
-  /* ---------- Start ---------- */
-  function showChat() {
+  /* ================= Start ================= */
+  function showApp() {
     $('setup').hidden = true;
     $('app').hidden = false;
-    if (!messages.some(m => m.type === 'sys' && m.text.startsWith('Welcome'))) {
-      messages.push({ type: 'sys', id: 'welcome', text: 'Welcome to General. Be kind and have fun 🎉', t: Date.now() });
-      persist();
-    }
     buildPicker();
-    render();
-    broadcastHello();
-    updateOnline();
+    renderMe();
+    renderSidebar();
+    connect();
     autosize();
-    input.focus();
+    if (pendingInvite) { const p = pendingInvite; pendingInvite = null; openAdd(p); }
   }
 
   applyAppearance();
-  if (user && user.name) showChat(); else showSetup();
+  if (user && user.name && CODE_RE.test(user.id)) showApp(); else showSetup();
 })();
 </script>
 </body>
